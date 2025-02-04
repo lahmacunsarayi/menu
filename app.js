@@ -19,12 +19,14 @@ function selectLocation(type) {
     const cart = document.getElementById('cart');
 
     menuSection.style.display = 'block';
-    cart.style.display = 'block';
 
     if (type === 'delivery') {
         orderSection.style.display = 'block';
+        cart.style.display = 'block';
     } else {
+        // Saray Lahmacundayım seçeneği için sipariş sistemini gizle
         orderSection.style.display = 'none';
+        cart.style.display = 'none';
     }
 
     loadMenu();
@@ -141,6 +143,24 @@ function removeFromCart(id) {
 }
 
 function sendToWhatsapp() {
+    // Eğer teslimat seçeneği seçildiyse, form kontrolü yap
+    const orderSection = document.getElementById('orderSection');
+    if (orderSection.style.display === 'block') {
+        const address = document.getElementById('address').value.trim();
+        const paymentType = document.getElementById('paymentType').value;
+
+        if (!address) {
+            document.getElementById('address').focus();
+            alert('Lütfen adres bilgisini giriniz.');
+            return;
+        }
+        if (!paymentType) {
+            document.getElementById('paymentType').focus();
+            alert('Lütfen ödeme tipini seçiniz.');
+            return;
+        }
+    }
+
     const phoneNumber = "905404630707"; // Restoranın WhatsApp numarasını buraya ekleyin
     let message = "🛒 Yeni Sipariş:\n\n";
     
@@ -148,11 +168,9 @@ function sendToWhatsapp() {
         message += `• ${item.name} - ${item.price.toFixed(2)} TL\n`;
     });
 
-    const address = document.getElementById('address').value;
-    const paymentType = document.getElementById('paymentType').value;
-    const discountCode = document.getElementById('discountCode').value;
-
     let total = cart.reduce((sum, item) => sum + item.price, 0);
+    const discountCode = document.getElementById('discountCode').value.toUpperCase();
+    
     if (discountCode && discounts[discountCode]) {
         const discountPercentage = discounts[discountCode];
         const discountAmount = total * (discountPercentage / 100);
@@ -162,12 +180,19 @@ function sendToWhatsapp() {
 
     message += `\n\n💵 Toplam: ${total.toFixed(2)} TL`;
 
-    if (address) {
+    // Sadece teslimat seçeneği seçildiyse adres ve ödeme bilgilerini ekle
+    if (orderSection.style.display === 'block') {
+        const address = document.getElementById('address').value;
+        const paymentType = document.getElementById('paymentType').value;
+        
         message += `\n\n📍 Adres:\n${address}`;
-    }
-    message += `\n\n💳 Ödeme Tipi: ${paymentType === 'cash' ? 'Nakit' : 'Kredi Kartı'}`;
-    if (discountCode) {
-        message += `\n🏷️ İndirim Kodu: ${discountCode}`;
+        message += `\n\n💳 Ödeme Tipi: ${paymentType === 'cash' ? 'Nakit' : 'Kredi Kartı'}`;
+        
+        if (discountCode) {
+            message += `\n🏷️ İndirim Kodu: ${discountCode}`;
+        }
+    } else {
+        message += "\n\n🏠 Müşteri işletmede";
     }
 
     const encodedMessage = encodeURIComponent(message);
