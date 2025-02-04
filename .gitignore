@@ -1,0 +1,15 @@
+# Google Apps Script
+appscript.js
+
+# Data files
+*.csv
+*.xlsx
+*.xls
+
+# Environment files
+.env
+.env.local
+
+# System files
+.DS_Store
+Thumbs.db
