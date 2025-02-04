@@ -5,7 +5,7 @@ let discounts = {};
 // Load discounts from Google Sheets
 async function loadDiscounts() {
     try {
-        const response = await fetch('https://script.google.com/macros/s/AKfycbxR75v4KP44pnUZfd_BfF_Mt7LyiM-xiPmfY4nC0cOGGSXTaRZbxhdAgxAlepPo-4EO/exec');
+        const response = await fetch('https://script.google.com/macros/s/AKfycbx5ryzTbWrW0XR3-plKlMpM8nQDc4KS4453zPRlfHyA9w03VWh5xzRCPnifHYRgSUVE/exec');
         const data = await response.json();
         discounts = data.discounts || {};
     } catch (error) {
@@ -33,13 +33,20 @@ function selectLocation(type) {
 // Load menu data from Google Sheets
 async function loadMenu() {
     const menuSection = document.getElementById('menuSection');
-    menuSection.innerHTML = '<div class="row" id="menuItems"></div>';
-    const menuItems = document.getElementById('menuItems');
+    menuSection.innerHTML = '<div class="text-center"><div class="spinner-border" role="status"><span class="visually-hidden">Yükleniyor...</span></div></div>';
+    const menuItems = document.createElement('div');
+    menuItems.className = 'row';
+    menuItems.id = 'menuItems';
 
     try {
-        const response = await fetch('https://script.google.com/macros/s/AKfycbxR75v4KP44pnUZfd_BfF_Mt7LyiM-xiPmfY4nC0cOGGSXTaRZbxhdAgxAlepPo-4EO/exec');
+        const response = await fetch('https://script.google.com/macros/s/AKfycbx5ryzTbWrW0XR3-plKlMpM8nQDc4KS4453zPRlfHyA9w03VWh5xzRCPnifHYRgSUVE/exec');
         const data = await response.json();
         const menu = data.menu;
+
+        if (!menu || menu.length === 0) {
+            menuSection.innerHTML = '<p class="text-center">Menü bulunamadı. Lütfen daha sonra tekrar deneyin.</p>';
+            return;
+        }
 
         // Group menu items by category
         const categories = {};
@@ -53,28 +60,28 @@ async function loadMenu() {
         });
 
         // Display menu by category
+        menuSection.innerHTML = ''; // Clear loading spinner
         for (const [category, items] of Object.entries(categories)) {
-            menuItems.innerHTML += `
-                <div class="col-12">
-                    <h2 class="menu-category">${category}</h2>
-                </div>
-            `;
+            const categoryDiv = document.createElement('div');
+            categoryDiv.className = 'col-12 mb-4';
+            categoryDiv.innerHTML = `<h2 class="menu-category">${category}</h2>`;
+            menuSection.appendChild(categoryDiv);
 
             items.forEach(item => {
-                const itemHtml = `
-                    <div class="col-md-4 mb-4">
-                        <div class="menu-item">
-                            <img src="${item.image}" alt="${item.name}" onerror="this.src='placeholder.jpg'">
-                            <h3>${item.name}</h3>
-                            <p>${item.description}</p>
-                            <p class="price">${item.price} TL</p>
-                            <button class="btn btn-primary" onclick="addToCart('${item.id}', '${item.name}', ${item.price})">
-                                Sepete Ekle
-                            </button>
-                        </div>
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'col-md-4 mb-4';
+                itemDiv.innerHTML = `
+                    <div class="menu-item">
+                        <img src="${item.image}" alt="${item.name}" onerror="this.src='https://via.placeholder.com/300x200.png?text=Resim+Yok'" loading="lazy">
+                        <h3>${item.name}</h3>
+                        <p>${item.description || ''}</p>
+                        <p class="price">${item.price.toFixed(2)} TL</p>
+                        <button class="btn btn-primary" onclick="addToCart('${item.id}', '${item.name}', ${item.price})">
+                            Sepete Ekle
+                        </button>
                     </div>
                 `;
-                menuItems.innerHTML += itemHtml;
+                menuSection.appendChild(itemDiv);
             });
         }
 
@@ -84,7 +91,7 @@ async function loadMenu() {
         }
     } catch (error) {
         console.error('Error loading menu:', error);
-        menuSection.innerHTML = '<p>Menü yüklenirken bir hata oluştu.</p>';
+        menuSection.innerHTML = '<p class="text-center text-danger">Menü yüklenirken bir hata oluştu. Lütfen sayfayı yenileyin.</p>';
     }
 }
 
@@ -102,19 +109,27 @@ function updateCart() {
         total += item.price;
         return `<div class="cart-item">
             <span>${item.name}</span>
-            <span>${item.price} TL</span>
+            <span>${item.price.toFixed(2)} TL</span>
             <button class="btn btn-sm btn-danger" onclick="removeFromCart('${item.id}')">Sil</button>
         </div>`;
     }).join('');
 
     // Apply discount if valid code exists
-    const discountCode = document.getElementById('discountCode').value;
+    const discountCode = document.getElementById('discountCode').value.toUpperCase();
+    let discountText = '';
+    
     if (discountCode && discounts[discountCode]) {
-        const discount = total * (discounts[discountCode] / 100);
-        total -= discount;
+        const discountPercentage = discounts[discountCode];
+        const discountAmount = total * (discountPercentage / 100);
+        total -= discountAmount;
+        discountText = `<div class="text-success">%${discountPercentage} indirim uygulandı: -${discountAmount.toFixed(2)} TL</div>`;
     }
 
-    cartTotal.innerHTML = `<strong>Toplam: ${total.toFixed(2)} TL</strong>`;
+    cartTotal.innerHTML = `
+        <div>Ara Toplam: ${total.toFixed(2)} TL</div>
+        ${discountText}
+        <strong>Toplam: ${total.toFixed(2)} TL</strong>
+    `;
 }
 
 function removeFromCart(id) {
@@ -126,31 +141,38 @@ function removeFromCart(id) {
 }
 
 function sendToWhatsapp() {
-    const phoneNumber = "+905404630707"; // Restoranın WhatsApp numarasını buraya ekleyin
-    let message = "Yeni Sipariş:\n\n";
+    const phoneNumber = "905404630707"; // Restoranın WhatsApp numarasını buraya ekleyin
+    let message = "🛒 Yeni Sipariş:\n\n";
     
     cart.forEach(item => {
-        message += `${item.name} - ${item.price} TL\n`;
+        message += `• ${item.name} - ${item.price.toFixed(2)} TL\n`;
     });
 
     const address = document.getElementById('address').value;
     const paymentType = document.getElementById('paymentType').value;
     const discountCode = document.getElementById('discountCode').value;
 
-    if (address) {
-        message += `\nAdres: ${address}`;
+    let total = cart.reduce((sum, item) => sum + item.price, 0);
+    if (discountCode && discounts[discountCode]) {
+        const discountPercentage = discounts[discountCode];
+        const discountAmount = total * (discountPercentage / 100);
+        total -= discountAmount;
+        message += `\n💰 İndirim: %${discountPercentage} (-${discountAmount.toFixed(2)} TL)`;
     }
-    message += `\nÖdeme Tipi: ${paymentType}`;
+
+    message += `\n\n💵 Toplam: ${total.toFixed(2)} TL`;
+
+    if (address) {
+        message += `\n\n📍 Adres:\n${address}`;
+    }
+    message += `\n\n💳 Ödeme Tipi: ${paymentType === 'cash' ? 'Nakit' : 'Kredi Kartı'}`;
     if (discountCode) {
-        message += `\nİndirim Kodu: ${discountCode}`;
+        message += `\n🏷️ İndirim Kodu: ${discountCode}`;
     }
 
     const encodedMessage = encodeURIComponent(message);
     window.open(`https://wa.me/${phoneNumber}?text=${encodedMessage}`);
 }
-
-// Refresh menu every 5 minutes
-setInterval(loadMenu, 5 * 60 * 1000);
 
 // Initial load
 document.addEventListener('DOMContentLoaded', () => {
