@@ -17,16 +17,24 @@ function selectLocation(type) {
     const menuSection = document.getElementById('menuSection');
     const orderSection = document.getElementById('orderSection');
     const cart = document.getElementById('cart');
+    const addToCartButtons = document.getElementsByClassName('add-to-cart-btn');
 
     menuSection.style.display = 'block';
 
     if (type === 'delivery') {
         orderSection.style.display = 'block';
         cart.style.display = 'block';
+        // Teslimat seçeneğinde sepete ekle butonlarını göster
+        Array.from(addToCartButtons).forEach(button => {
+            button.style.display = 'block';
+        });
     } else {
-        // Saray Lahmacundayım seçeneği için sipariş sistemini gizle
+        // İşletme içi seçeneğinde sipariş sistemini ve butonları gizle
         orderSection.style.display = 'none';
         cart.style.display = 'none';
+        Array.from(addToCartButtons).forEach(button => {
+            button.style.display = 'none';
+        });
     }
 
     loadMenu();
@@ -36,9 +44,6 @@ function selectLocation(type) {
 async function loadMenu() {
     const menuSection = document.getElementById('menuSection');
     menuSection.innerHTML = '<div class="text-center"><div class="spinner-border" role="status"><span class="visually-hidden">Yükleniyor...</span></div></div>';
-    const menuItems = document.createElement('div');
-    menuItems.className = 'row';
-    menuItems.id = 'menuItems';
 
     try {
         const response = await fetch('https://script.google.com/macros/s/AKfycbx5ryzTbWrW0XR3-plKlMpM8nQDc4KS4453zPRlfHyA9w03VWh5xzRCPnifHYRgSUVE/exec');
@@ -61,30 +66,43 @@ async function loadMenu() {
             }
         });
 
+        // Clear loading spinner
+        menuSection.innerHTML = '';
+
         // Display menu by category
-        menuSection.innerHTML = ''; // Clear loading spinner
         for (const [category, items] of Object.entries(categories)) {
             const categoryDiv = document.createElement('div');
             categoryDiv.className = 'col-12 mb-4';
             categoryDiv.innerHTML = `<h2 class="menu-category">${category}</h2>`;
             menuSection.appendChild(categoryDiv);
 
+            const itemsContainer = document.createElement('div');
+            itemsContainer.className = 'row';
+
             items.forEach(item => {
                 const itemDiv = document.createElement('div');
                 itemDiv.className = 'col-md-4 mb-4';
+                
+                // Resim yüklenene kadar boyutları sabit tut
                 itemDiv.innerHTML = `
                     <div class="menu-item">
-                        <img src="${item.image}" alt="${item.name}" onerror="this.src='https://via.placeholder.com/300x200.png?text=Resim+Yok'" loading="lazy">
+                        <div class="image-container">
+                            <img src="${item.image}" alt="${item.name}" 
+                                onerror="this.src='https://via.placeholder.com/300x200.png?text=Resim+Yok'" 
+                                loading="lazy">
+                        </div>
                         <h3>${item.name}</h3>
-                        <p>${item.description || ''}</p>
+                        ${item.description ? `<p class="description">${item.description}</p>` : ''}
                         <p class="price">${item.price.toFixed(2)} TL</p>
-                        <button class="btn btn-primary" onclick="addToCart('${item.id}', '${item.name}', ${item.price})">
+                        <button class="btn btn-primary add-to-cart-btn" onclick="addToCart('${item.id}', '${item.name}', ${item.price})">
                             Sepete Ekle
                         </button>
                     </div>
                 `;
-                menuSection.appendChild(itemDiv);
+                itemsContainer.appendChild(itemDiv);
             });
+
+            menuSection.appendChild(itemsContainer);
         }
 
         // Update discounts
