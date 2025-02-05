@@ -55,12 +55,6 @@ body {
 /* Resim Konteyner Stili */
 .image-container {
     width:
-/* Miktar seçiciyi gizleme */
-.quantity-selector {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin: 0.5rem 0;
 }
 
 /* İşletme içi seçeneğinde miktar seçiciyi gizle */
