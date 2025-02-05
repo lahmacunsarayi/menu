@@ -57,7 +57,3 @@ body {
     width:
 }
 
-/* İşletme içi seçeneğinde miktar seçiciyi gizle */
-.in-store .quantity-selector {
-    display: none;
-}
