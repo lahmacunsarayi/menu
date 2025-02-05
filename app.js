@@ -5,7 +5,7 @@ let discounts = {};
 // Load discounts from Google Sheets
 async function loadDiscounts() {
     try {
-        const response = await fetch('https://script.google.com/macros/s/AKfycbx5ryzTbWrW0XR3-plKlMpM8nQDc4KS4453zPRlfHyA9w03VWh5xzRCPnifHYRgSUVE/exec');
+        const response = await fetch('https://script.google.com/macros/s/AKfycbwHyd04XUi8pmp6CM0ZhRepZnxnEwWUo8y4CkMOB8xtp28DW5DpNMpmlh7hetbBFpDv/exec?sheet=DiscountCodes');
         const data = await response.json();
         discounts = data.discounts || {};
     } catch (error) {
@@ -18,15 +18,19 @@ function selectLocation(type) {
     const orderSection = document.getElementById('orderSection');
     const cartSection = document.getElementById('cart');
     const addToCartButtons = document.getElementsByClassName('add-to-cart-btn');
+    const quantitySelectors = document.getElementsByClassName('quantity-selector');
 
     menuSection.style.display = 'block';
 
     if (type === 'delivery') {
         orderSection.style.display = 'block';
         cartSection.style.display = 'block';
-        // Teslimat seçeneğinde sepete ekle butonlarını göster
+        // Teslimat seçeneğinde sepete ekle butonlarını ve miktar seçiciyi göster
         Array.from(addToCartButtons).forEach(button => {
             button.style.display = 'block';
+        });
+        Array.from(quantitySelectors).forEach(selector => {
+            selector.style.display = 'flex';
         });
     } else {
         // İşletme içi seçeneğinde sipariş sistemini ve butonları gizle
@@ -34,6 +38,9 @@ function selectLocation(type) {
         cartSection.style.display = 'none';
         Array.from(addToCartButtons).forEach(button => {
             button.style.display = 'none';
+        });
+        Array.from(quantitySelectors).forEach(selector => {
+            selector.style.display = 'none';
         });
     }
 
@@ -46,7 +53,7 @@ async function loadMenu() {
     menuSection.innerHTML = '<div class="text-center"><div class="spinner-border" role="status"><span class="visually-hidden">Yükleniyor...</span></div></div>';
 
     try {
-        const response = await fetch('https://script.google.com/macros/s/AKfycbx5ryzTbWrW0XR3-plKlMpM8nQDc4KS4453zPRlfHyA9w03VWh5xzRCPnifHYRgSUVE/exec');
+        const response = await fetch('https://script.google.com/macros/s/AKfycbwHyd04XUi8pmp6CM0ZhRepZnxnEwWUo8y4CkMOB8xtp28DW5DpNMpmlh7hetbBFpDv/exec?sheet=Menu');
         const data = await response.json();
         const menu = data.menu;
 
@@ -110,21 +117,23 @@ async function loadMenu() {
             menuSection.appendChild(itemsContainer);
         }
 
-        // Update discounts
-        if (data.discounts) {
-            discounts = data.discounts;
-        }
-
         // Butonların görünürlüğünü tekrar kontrol et
         const orderSection = document.getElementById('orderSection');
         const addToCartButtons = document.getElementsByClassName('add-to-cart-btn');
+        const quantitySelectors = document.getElementsByClassName('quantity-selector');
         if (orderSection.style.display === 'none') {
             Array.from(addToCartButtons).forEach(button => {
                 button.style.display = 'none';
             });
+            Array.from(quantitySelectors).forEach(selector => {
+                selector.style.display = 'none';
+            });
         } else {
             Array.from(addToCartButtons).forEach(button => {
                 button.style.display = 'block';
+            });
+            Array.from(quantitySelectors).forEach(selector => {
+                selector.style.display = 'flex';
             });
         }
 
