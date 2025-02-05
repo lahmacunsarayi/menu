@@ -16,14 +16,14 @@ async function loadDiscounts() {
 function selectLocation(type) {
     const menuSection = document.getElementById('menuSection');
     const orderSection = document.getElementById('orderSection');
-    const cart = document.getElementById('cart');
+    const cartSection = document.getElementById('cart');
     const addToCartButtons = document.getElementsByClassName('add-to-cart-btn');
 
     menuSection.style.display = 'block';
 
     if (type === 'delivery') {
         orderSection.style.display = 'block';
-        cart.style.display = 'block';
+        cartSection.style.display = 'block';
         // Teslimat seçeneğinde sepete ekle butonlarını göster
         Array.from(addToCartButtons).forEach(button => {
             button.style.display = 'block';
@@ -31,7 +31,7 @@ function selectLocation(type) {
     } else {
         // İşletme içi seçeneğinde sipariş sistemini ve butonları gizle
         orderSection.style.display = 'none';
-        cart.style.display = 'none';
+        cartSection.style.display = 'none';
         Array.from(addToCartButtons).forEach(button => {
             button.style.display = 'none';
         });
@@ -94,6 +94,11 @@ async function loadMenu() {
                         <h3>${item.name}</h3>
                         ${item.description ? `<p class="description">${item.description}</p>` : ''}
                         <p class="price">${item.price.toFixed(2)} TL</p>
+                        <div class="quantity-selector">
+                            <button class="btn btn-secondary btn-sm" onclick="decreaseQuantity('${item.id}')">-</button>
+                            <span id="quantity-${item.id}">1</span>
+                            <button class="btn btn-secondary btn-sm" onclick="increaseQuantity('${item.id}')">+</button>
+                        </div>
                         <button class="btn btn-primary add-to-cart-btn" onclick="addToCart('${item.id}', '${item.name}', ${item.price})">
                             Sepete Ekle
                         </button>
@@ -109,14 +114,51 @@ async function loadMenu() {
         if (data.discounts) {
             discounts = data.discounts;
         }
+
+        // Butonların görünürlüğünü tekrar kontrol et
+        const orderSection = document.getElementById('orderSection');
+        const addToCartButtons = document.getElementsByClassName('add-to-cart-btn');
+        if (orderSection.style.display === 'none') {
+            Array.from(addToCartButtons).forEach(button => {
+                button.style.display = 'none';
+            });
+        } else {
+            Array.from(addToCartButtons).forEach(button => {
+                button.style.display = 'block';
+            });
+        }
+
     } catch (error) {
         console.error('Error loading menu:', error);
         menuSection.innerHTML = '<p class="text-center text-danger">Menü yüklenirken bir hata oluştu. Lütfen sayfayı yenileyin.</p>';
     }
 }
 
+function increaseQuantity(id) {
+    const quantityElement = document.getElementById(`quantity-${id}`);
+    let quantity = parseInt(quantityElement.textContent);
+    quantityElement.textContent = quantity + 1;
+}
+
+function decreaseQuantity(id) {
+    const quantityElement = document.getElementById(`quantity-${id}`);
+    let quantity = parseInt(quantityElement.textContent);
+    if (quantity > 1) {
+        quantityElement.textContent = quantity - 1;
+    }
+}
+
 function addToCart(id, name, price) {
-    cart.push({ id, name, price });
+    const quantity = parseInt(document.getElementById(`quantity-${id}`).textContent);
+    const existingItem = cart.find(item => item.id === id);
+
+    if (existingItem) {
+        existingItem.quantity += quantity;
+        existingItem.totalPrice = existingItem.quantity * price;
+    } else {
+        cart.push({ id, name, price, quantity, totalPrice: price * quantity });
+    }
+
     updateCart();
 }
 
@@ -126,10 +168,10 @@ function updateCart() {
     let total = 0;
 
     cartItems.innerHTML = cart.map(item => {
-        total += item.price;
+        total += item.totalPrice;
         return `<div class="cart-item">
-            <span>${item.name}</span>
-            <span>${item.price.toFixed(2)} TL</span>
+            <span>${item.name} x ${item.quantity}</span>
+            <span>${item.totalPrice.toFixed(2)} TL</span>
             <button class="btn btn-sm btn-danger" onclick="removeFromCart('${item.id}')">Sil</button>
         </div>`;
     }).join('');
@@ -183,10 +225,10 @@ function sendToWhatsapp() {
     let message = "🛒 Yeni Sipariş:\n\n";
     
     cart.forEach(item => {
-        message += `• ${item.name} - ${item.price.toFixed(2)} TL\n`;
+        message += `• ${item.name} x ${item.quantity} - ${item.totalPrice.toFixed(2)} TL\n`;
     });
 
-    let total = cart.reduce((sum, item) => sum + item.price, 0);
+    let total = cart.reduce((sum, item) => sum + item.totalPrice, 0);
     const discountCode = document.getElementById('discountCode').value.toUpperCase();
     
     if (discountCode && discounts[discountCode]) {
