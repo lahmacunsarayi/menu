@@ -220,7 +220,7 @@ function sendToWhatsapp() {
 
         if (!address) {
             document.getElementById('address').focus();
-            alert('Lütfen adres bilgisini giriniz.');
+            alert('Şu anda sadece Konyaaltı ilçesine hizmet vermekteyiz.Lütfen adres bilgisini giriniz.');
             return;
         }
         if (!paymentType) {
